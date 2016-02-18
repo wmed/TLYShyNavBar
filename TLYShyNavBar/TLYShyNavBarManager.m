@@ -184,7 +184,12 @@ static void * const kTLYShyNavBarManagerKVOContext = (void*)&kTLYShyNavBarManage
     _disable = disable;
 
     if (!disable) {
-        self.previousYOffset = self.scrollView.contentOffset.y;
+        CGFloat yOffset = self.scrollView.contentOffset.y;
+        BOOL inverted = self.scrollView.transform.d == -1;
+        if (inverted) {
+            yOffset = self.scrollView.contentSize.height - self.scrollView.contentOffset.y - self.scrollView.frame.size.height;
+        }
+        self.previousYOffset = yOffset;
     }
 }
 
@@ -234,11 +239,17 @@ static void * const kTLYShyNavBarManagerKVOContext = (void*)&kTLYShyNavBarManage
     {
         return;
     }
+    
+    CGFloat yOffset = self.scrollView.contentOffset.y;
+    BOOL inverted = self.scrollView.transform.d == -1;
+    if (inverted) {
+        yOffset = self.scrollView.contentSize.height - self.scrollView.contentOffset.y - self.scrollView.frame.size.height;
+    }
 
     if (!isnan(self.previousYOffset))
     {
         // 1 - Calculate the delta
-        CGFloat deltaY = (self.previousYOffset - self.scrollView.contentOffset.y);
+        CGFloat deltaY = (self.previousYOffset - yOffset);
 
         // 2 - Ignore any scrollOffset beyond the bounds
         CGFloat start = -self.scrollView.contentInset.top;
@@ -280,7 +291,7 @@ static void * const kTLYShyNavBarManagerKVOContext = (void*)&kTLYShyNavBarManage
             deltaY = MIN(0, availableResistance + deltaY);
         }
         // 5.2 - Only apply resistance if expanding above the status bar
-        else if (self.scrollView.contentOffset.y > 0)
+        else if (yOffset > 0)
         {
             CGFloat availableResistance = self.expansionResistance - self.resistanceConsumed;
             self.resistanceConsumed = MIN(self.expansionResistance, self.resistanceConsumed + deltaY);
@@ -309,7 +320,7 @@ static void * const kTLYShyNavBarManagerKVOContext = (void*)&kTLYShyNavBarManage
         [self.navBarController updateYOffset:deltaY];
     }
 
-    self.previousYOffset = self.scrollView.contentOffset.y;
+    self.previousYOffset = yOffset;
 }
 
 - (void)_handleScrollingEnded
